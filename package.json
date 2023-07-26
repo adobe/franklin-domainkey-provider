@@ -1,0 +1,72 @@
+{
+  "name": "@adobe/franklin-domainkey-provider",
+  "version": "1.4.9",
+  "private": true,
+  "description": "Franklin Domainkey Provider",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "c8 mocha  -i -g 'Post-Deploy'",
+    "test-postdeploy": "mocha -g 'Post-Deploy'",
+    "lint": "eslint .",
+    "semantic-release": "semantic-release",
+    "commit": "git-cz",
+    "build": "hedy -v",
+    "deploy": "hedy -v --deploy --test",
+    "deploy-routes": "hedy --no-build --no-hints -l major",
+    "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CIRCLE_BUILD_NUM -l ci --cleanup-ci 24h",
+    "prepare": "husky install"
+  },
+  "wsk": {
+    "nodeVersion": 18,
+    "target": "aws",
+    "name": "helix-services/domainkey-provider@${version}",
+    "testUrl": "/_status_check/healthcheck.json",
+    "memory": 256,
+    "fastlyServiceId!important": ""
+  },
+  "mocha": {
+    "spec": "test/**/*.test.js",
+    "require": "test/setup-env.js",
+    "recursive": "true",
+    "reporter": "mocha-multi-reporters",
+    "reporter-options": "configFile=.mocha-multi.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adobe/franklin-domainkey-provider"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/adobe/franklin-domainkey-provider/issues"
+  },
+  "homepage": "https://github.com/adobe/franklin-domainkey-provider#readme",
+  "dependencies": {
+    "@adobe/fetch": "4.0.13",
+    "@adobe/helix-shared-wrap": "2.0.0",
+    "@adobe/helix-status": "10.0.9",
+    "@adobe/helix-universal-logger": "3.0.10"
+  },
+  "devDependencies": {
+    "@adobe/eslint-config-helix": "2.0.2",
+    "@adobe/helix-deploy": "9.0.35",
+    "@adobe/helix-universal": "4.1.11",
+    "@adobe/semantic-release-coralogix": "1.1.25",
+    "@semantic-release/changelog": "6.0.3",
+    "@semantic-release/exec": "6.0.3",
+    "@semantic-release/git": "10.0.1",
+    "c8": "7.13.0",
+    "dotenv": "16.0.3",
+    "eslint": "8.41.0",
+    "husky": "8.0.3",
+    "junit-report-builder": "3.0.1",
+    "lint-staged": "13.2.2",
+    "mocha": "10.2.0",
+    "mocha-multi-reporters": "1.5.1",
+    "semantic-release": "21.0.2"
+  },
+  "lint-staged": {
+    "*.js": "eslint"
+  }
+}
