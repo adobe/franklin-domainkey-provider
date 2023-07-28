@@ -76,4 +76,15 @@ describe('Index Tests', () => {
     });
     assert.equal(result.status, 503);
   }).timeout(50000);
+
+  it('index returns 201 if rotating the domainkey worked as expected', async () => {
+    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: process.env.TEST_DOMAINKEY, // this one is real,
+        // but only for one domain
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 201);
+  }).timeout(50000);
 });
