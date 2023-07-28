@@ -111,6 +111,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
     },
   });
   const json = await res.json();
+  console.log('response from run-query', json);
   if (!res.ok || json.results.data[0].key !== domainkey) {
     return new Response(`Error while rotating domain keys: ${res.statusText}`, {
       status: 503,
