@@ -53,24 +53,38 @@ async function run(request, context) {
     const newkey = randomUUID();
     const hash = hashMe(domain, newkey);
     const currentURL = new URL(request.url);
+    currentURL.search = '';
 
     const instructions = `Please add a TXT record for _rum-challenge.${domain} with the value ${hash}. Once
 the record is added, you can verify that it is set up correctly by making a POST request to this URL including
 the domain and domainkey parameters. For example:
 
-curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" https://${currentURL}
+curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
 `;
     return new Response(instructions, {
       status: 404,
+      headers: {
+        'Content-Type': 'text/plain',
+        'x-error': 'domainkey not set',
+        'x-domainkey': newkey,
+      },
     });
   }
   // the domain key is set, so verify that the TXT record is set up correctly
   const hash = hashMe(domain, domainkey);
   const txt = `_rum-challenge.${domain}`;
-  const txtrecords = await resolveTxtAsync(txt);
+  let txtrecords = [];
+  try {
+    txtrecords = await resolveTxtAsync(txt);
+  } catch (e) {
+    context.logger.error(`Error while resolving TXT record for ${txt}: ${e.message}`);
+  }
   if (txtrecords.length === 0) {
     return new Response(`No TXT record found for ${txt}`, {
       status: 404,
+      headers: {
+        'x-error': 'TXT record not found',
+      },
     });
   }
   if (txtrecords[0].indexOf(hash) === -1) {

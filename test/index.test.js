@@ -16,10 +16,55 @@ import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 
 describe('Index Tests', () => {
-  it('index function is present', async () => {
+  it('index rejects to run if no domain key is available', async () => {
     const result = await main(new Request('https://localhost/'), {
       env: {},
     });
+    assert.equal(result.status, 500);
     assert.strictEqual(await result.text(), 'No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error');
+  });
+
+  it('index requires a domain', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
+      },
+    });
+    assert.equal(result.status, 400);
+    assert.strictEqual(await result.text(), 'No domain specified');
+  });
+
+  it('index generates a domain key if not specified', async () => {
+    const result = await main(new Request('https://localhost/?domain=example.com'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
+      },
+    });
+    assert.equal(result.status, 404);
+    const newkey = result.headers.get('x-domainkey');
+    const txt = await result.text();
+    assert(txt.indexOf(newkey) >= 0);
+    console.log(txt);
+  });
+
+  it('index returns 404 if text record is not set', async () => {
+    const result = await main(new Request('https://localhost/?domain=example.com&domainkey=foo'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 404);
+  });
+
+  it('index returns 403 if text record is set but wrong', async () => {
+    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 403);
+    console.log(await result.text());
   });
 });
