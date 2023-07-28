@@ -34,11 +34,11 @@ function hashMe(domain, domainkey) {
  * @returns {Response} a response
  */
 async function run(request, context) {
-  const { UNIVERSAL_DOMAIN_KEY } = context.env;
+  const { HELIX_RUN_QUERY_DOMAIN_KEY } = context.env;
   const { data } = context;
   const { domain, domainkey } = data;
-  if (!UNIVERSAL_DOMAIN_KEY) {
-    return new Response('No UNIVERSAL_DOMAIN_KEY set. This is a configuration error', {
+  if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
+    return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
       status: 500,
     });
   }
@@ -83,7 +83,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" https://${currentURL
   const body = {
     url: domain,
     newkey: domainkey,
-    domainkey: UNIVERSAL_DOMAIN_KEY,
+    domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
     readonly: false,
   };
   const res = await fetch(endpoint, {

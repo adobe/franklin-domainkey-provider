@@ -20,6 +20,6 @@ describe('Index Tests', () => {
     const result = await main(new Request('https://localhost/'), {
       env: {},
     });
-    assert.strictEqual(await result.text(), 'No UNIVERSAL_DOMAIN_KEY set. This is a configuration error');
+    assert.strictEqual(await result.text(), 'No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error');
   });
 });
