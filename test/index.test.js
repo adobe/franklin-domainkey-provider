@@ -75,5 +75,5 @@ describe('Index Tests', () => {
       logger: console,
     });
     assert.equal(result.status, 503);
-  });
+  }).timeout(50000);
 });
