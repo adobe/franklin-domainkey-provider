@@ -24,7 +24,7 @@ createTargets().forEach((target) => {
       fetchContext.reset();
     });
 
-    it('returns the status of the function', async () => {
+    it(`returns the status of the function at ${target.url('/_status_check/healthcheck.json')}`, async () => {
       const url = target.url('/_status_check/healthcheck.json');
       const res = await fetch(url);
       assert.strictEqual(res.status, 200);
@@ -41,7 +41,7 @@ createTargets().forEach((target) => {
       });
     }).timeout(50000);
 
-    it('invokes the function', async () => {
+    it(`invokes the function at${target.url('/')}`, async () => {
       const res = await fetch(target.url('/'));
       assert.strictEqual(res.status, 400);
     }).timeout(50000);
