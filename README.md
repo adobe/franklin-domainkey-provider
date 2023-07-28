@@ -15,13 +15,13 @@
 Start by calling the service
 
 ```bash
-curl https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
+curl https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
 ```
 
 It will tell you that it needs a `domain` parameter, so we try again
 
 ```bash
-curl -F domain=example.com https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
+curl -F domain=example.com https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
 ```
 
 This will return instruction on setting completing the callenge. The response
@@ -40,7 +40,7 @@ Once the record is set, you can call the service again to verify that the challe
 has been completed and start issuing domain keys.
 
 ```bash
-curl -F domain=example.com -F domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116 https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
+curl -F domain=example.com -F domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116 https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
 ```
 
 If the domain key has been verified and activated, you will see a response status of
