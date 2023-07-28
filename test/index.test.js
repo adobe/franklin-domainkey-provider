@@ -58,13 +58,22 @@ describe('Index Tests', () => {
   });
 
   it('index returns 403 if text record is set but wrong', async () => {
-    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=bar'), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
       },
       logger: console,
     });
     assert.equal(result.status, 403);
-    console.log(await result.text());
+  });
+
+  it('index returns 503 if rotating the domainkey failed for backend reasons', async () => {
+    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo', // this key is wrong on purpose, so that the update won't go through
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 503);
   });
 });

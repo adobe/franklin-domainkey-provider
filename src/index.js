@@ -90,6 +90,9 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
   if (txtrecords[0].indexOf(hash) === -1) {
     return new Response(`TXT record for ${txt} does not contain ${hash}`, {
       status: 403,
+      headers: {
+        'x-error': 'TXT record does not match',
+      },
     });
   }
   // create new domain key by making API request
@@ -107,7 +110,10 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       'Content-Type': 'application/json',
     },
   });
-  if (!res.ok) {
+  // todo: we should verify that the domain key was actually rotated
+  // we can do that by looking at res.json() and checking .result.data[0].status
+  // and .result.data[0].key
+  if (!res.ok || (await res.json()).result.data[0].key !== domainkey) {
     return new Response(`Error while rotating domain keys: ${res.statusText}`, {
       status: 503,
     });
