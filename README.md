@@ -10,15 +10,41 @@
 [![LGTM Code Quality Grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/adobe/franklin-domainkey-provider.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/adobe/franklin-domainkey-provider)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-## Installation
-
 ## Usage
 
+Start by calling the service
+
 ```bash
-curl https://helix-pages.anywhere.run/franklin-services/franklin-domainkey-provider@v1
+curl https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
 ```
 
-For more, see the [API documentation](docs/API.md).
+It will tell you that it needs a `domain` parameter, so we try again
+
+```bash
+curl -F domain=example.com https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
+```
+
+This will return instruction on setting completing the callenge. The response
+contains a domain key that will be a UUID like `f4a5cb7f-adac-450c-919f-a12b13cec116`
+as well as a challenge that is a hash of the domain key and your domain like
+`4a159285c173d7ac98a3e20c746b46d191ea14dd53214b42a2f6ed36f7d2aeb7`
+
+Create a TXT record for `_rum_-challenge.example.com` with the value of the challenge. 
+You can verify that the record has been set using `dig`
+
+```bash
+dig TXT _rum-challenge.example.com
+```
+
+Once the record is set, you can call the service again to verify that the challenge
+has been completed and start issuing domain keys.
+
+```bash
+curl -F domain=example.com -F domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116 https://helix-pages.anywhere.run/helix-services/domainkey-provider@v1
+```
+
+If the domain key has been verified and activated, you will see a response status of
+201. If the domain key has not been verified, you will see a response status of 403.
 
 ## Development
 

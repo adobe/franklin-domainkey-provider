@@ -17,7 +17,9 @@ import { main } from '../src/index.js';
 
 describe('Index Tests', () => {
   it('index function is present', async () => {
-    const result = await main(new Request('https://localhost/'), {});
-    assert.strictEqual(await result.text(), 'Hello, world.');
+    const result = await main(new Request('https://localhost/'), {
+      env: {},
+    });
+    assert.strictEqual(await result.text(), 'No UNIVERSAL_DOMAIN_KEY set. This is a configuration error');
   });
 });
