@@ -113,7 +113,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
   // todo: we should verify that the domain key was actually rotated
   // we can do that by looking at res.json() and checking .result.data[0].status
   // and .result.data[0].key
-  if (!res.ok || (await res.json()).result.data[0].key !== domainkey) {
+  if (!res.ok || (await res.json()).results.data[0].key !== domainkey) {
     return new Response(`Error while rotating domain keys: ${res.statusText}`, {
       status: 503,
     });
