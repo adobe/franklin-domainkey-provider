@@ -17,6 +17,7 @@ import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
+import { Magic } from '@magic-sdk/admin';
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -34,13 +35,64 @@ function hashMe(domain, domainkey) {
  * @returns {Response} a response
  */
 async function run(request, context) {
-  const { HELIX_RUN_QUERY_DOMAIN_KEY } = context.env;
+  const { HELIX_RUN_QUERY_DOMAIN_KEY, MAGIC_SECRET_API_KEY } = context.env;
   const { data } = context;
-  const { domain, domainkey } = data;
+  const { domain, domainkey, token } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
       status: 500,
     });
+  }
+  if (request.method === 'POST' && token) {
+    // implement email validation
+    const magic = await Magic.init(MAGIC_SECRET_API_KEY);
+    try {
+      // validate the DID token
+      await magic.token.validate(token);
+      // get the email address from the DID token
+      const { email } = await magic.users.getMetadataByToken(token);
+      // get the domain from the email address
+      let emaildomain = email.split('@').pop();
+      // if domain is adobe.com then increase the scope
+      if (emaildomain === 'adobe.com') {
+        emaildomain = '';
+      }
+      // create new domain key by making API request
+      const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
+      const body = {
+        url: emaildomain,
+        domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
+        readonly: true,
+        // expires in 7 days, format is YYYY-MM-DD
+        expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      };
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || json.results.data[0].key !== domainkey) {
+        return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+          status: 503,
+        });
+      }
+      return new Response(JSON.stringify({
+        email,
+        ...json.results.data[0],
+      }), {
+        status: 201,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (e) {
+      return new Response(`Invalid token: ${e.message}`, {
+        status: 403,
+      });
+    }
   }
   if (!domain) {
     return new Response('No domain specified', {
