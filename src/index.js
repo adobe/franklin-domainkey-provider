@@ -17,6 +17,7 @@ import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
+import f from '@frontegg/client';
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -34,13 +35,55 @@ function hashMe(domain, domainkey) {
  * @returns {Response} a response
  */
 async function run(request, context) {
-  const { HELIX_RUN_QUERY_DOMAIN_KEY } = context.env;
+  const { HELIX_RUN_QUERY_DOMAIN_KEY, FRONTEGG_API_KEY, FRONTEGG_CLIENT_ID } = context.env;
   const { data } = context;
-  const { domain, domainkey } = data;
+  const { domain, domainkey, token } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
       status: 500,
     });
+  }
+  if (token) {
+    const { IdentityClient, FronteggContext } = f;
+
+    FronteggContext.init({
+      FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY,
+    });
+
+    const identityClient = new IdentityClient({ FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY });
+    const user = await identityClient.validateIdentityOnToken(token);
+    if (user.email_verified) {
+      const emaildomain = user.email.split('@').pop();
+      // create new domain key by making API request
+      const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
+      const body = {
+        url: emaildomain === 'adobe.com' ? '' : emaildomain,
+        newkey: domainkey,
+        domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
+        readonly: true,
+        // 7 days from now, in YYYY-MM-DD format
+        expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      };
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || json.results.data[0].status !== 'success') {
+        return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+          status: 503,
+        });
+      }
+      return new Response(JSON.stringify(json.results.data[0]), {
+        status: 201,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
   }
   if (!domain) {
     return new Response('No domain specified', {
