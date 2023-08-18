@@ -85,6 +85,6 @@ describe('Index Tests', () => {
       },
       logger: console,
     });
-    assert.equal(result.status, 201);
+    assert.equal(result.status, 201, await result.text());
   }).timeout(50000);
 });
