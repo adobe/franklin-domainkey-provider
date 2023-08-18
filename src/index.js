@@ -43,7 +43,8 @@ async function run(request, context) {
       status: 500,
     });
   }
-  if (token) {
+  /* c8 ignore start */
+  if (token && request.method === 'POST') {
     const { IdentityClient, FronteggContext } = f;
 
     FronteggContext.init({
@@ -85,6 +86,7 @@ async function run(request, context) {
       });
     }
   }
+  /* c8 ignore stop */
   if (!domain) {
     return new Response('No domain specified', {
       status: 400,

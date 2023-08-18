@@ -12,7 +12,7 @@
     "semantic-release": "semantic-release",
     "commit": "git-cz",
     "build": "hedy -v",
-    "deploy": "hedy -v --deploy --test",
+    "deploy": "hedy -v --deploy --test -p FRONTEGG_API_KEY=$FRONTEGG_API_KEY -p FRONTEGG_CLIENT_ID=$FRONTEGG_CLIENT_ID",
     "deploy-routes": "hedy --no-build --no-hints -l major",
     "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CIRCLE_BUILD_NUM -l ci --cleanup-ci 24h",
     "prepare": "husky install"
