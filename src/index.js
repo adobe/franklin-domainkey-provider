@@ -17,7 +17,7 @@ import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
-import f from '@frontegg/client';
+import { IdentityClient, FronteggContext } from '@frontegg/client';
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -45,8 +45,6 @@ async function run(request, context) {
   }
   /* c8 ignore start */
   if (token && request.method === 'POST') {
-    const { IdentityClient, FronteggContext } = f;
-
     FronteggContext.init({
       FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY,
     });
