@@ -70,7 +70,7 @@ describe('Index Tests', () => {
   it('index returns 503 if rotating the domainkey failed for backend reasons', async () => {
     const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
       env: {
-        HELIX_RUN_QUERY_DOMAIN_KEY: 'baz', // this key is wrong on purpose, so that the update won't go through
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'baz', // this key is wrong on purpose so that the update won't go through
       },
       logger: console,
     });
