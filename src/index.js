@@ -54,7 +54,9 @@ async function run(request, context) {
     HELIX_RUN_QUERY_DOMAIN_KEY, FRONTEGG_API_KEY, FRONTEGG_CLIENT_ID,
   } = context.env;
   const { data } = context;
-  const { domain, domainkey, token } = data;
+  const {
+    domain, expiry, domainkey, token,
+  } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
       status: 500,
@@ -78,30 +80,36 @@ async function run(request, context) {
 
   /* c8 ignore start */
   if (token && request.method === 'POST') {
-    /*
-    // TODO remove frontegg code in favor of JWT code
-    FronteggContext.init({
-      FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY,
-    });
-
-    const identityClient = new IdentityClient({ FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY });
-    const user = await identityClient.validateIdentityOnToken(token);
-    */
-
     const user = parseJwt(token);
 
-    if (user.email_verified) {
+    if (user && user.email_verified) {
       const emaildomain = user.email.split('@').pop();
+
+      // set defaults for domain key creation
+      let urlforkey = emaildomain;
+      // 7 days from now, in YYYY-MM-DD format
+      let expiryforkey = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Adobe employees have more flexibility in domain key creation
+      if (emaildomain === 'adobe.com') {
+        if (domain) {
+          urlforkey = domain;
+        } else {
+          urlforkey = '';
+        }
+        // domain key to expire either on given date or never
+        expiryforkey = expiry;
+      }
+
       // create new domain key by making API request
       const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
       const body = {
-        url: emaildomain === 'adobe.com' ? '' : emaildomain,
+        url: urlforkey,
         newkey: domainkey,
         domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
         readonly: true,
         note: 'from franklin-domainkey-provider',
-        // 7 days from now, in YYYY-MM-DD format
-        expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        expiry: expiryforkey,
       };
       const res = await fetch(endpoint, {
         method: 'POST',
