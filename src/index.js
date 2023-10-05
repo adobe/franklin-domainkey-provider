@@ -65,6 +65,7 @@ async function run(request, context) {
   }
 
   /* c8 ignore start */
+  // TODO probably delete this once CORS issues resolved
   if (request.method === 'OPTIONS') {
     return new Response('Preflight request valid', {
       status: 200,
@@ -78,6 +79,7 @@ async function run(request, context) {
   /* c8 ignore start */
   if (token && request.method === 'POST') {
     /*
+    // TODO remove frontegg code in favor of JWT code
     FronteggContext.init({
       FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY,
     });
@@ -88,23 +90,6 @@ async function run(request, context) {
 
     const user = parseJwt(token);
 
-    return new Response(JSON.stringify(user), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
-
-    /*
-    const jwt = require('jsonwebtoken');
-
-    jwt.verify(token, FRONTEGG_PUBLIC_KEY, (err, user) => {
-      console.log(user); // user info from the token
-    });
-    */
-
-    /*
     if (user.email_verified) {
       const emaildomain = user.email.split('@').pop();
       // create new domain key by making API request
@@ -114,6 +99,7 @@ async function run(request, context) {
         newkey: domainkey,
         domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
         readonly: true,
+        note: 'from franklin-domainkey-provider',
         // 7 days from now, in YYYY-MM-DD format
         expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       };
@@ -141,9 +127,9 @@ async function run(request, context) {
         },
       });
     }
-    */
   }
   /* c8 ignore stop */
+
   if (!domain) {
     return new Response('No domain specified', {
       status: 400,
