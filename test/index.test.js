@@ -26,7 +26,7 @@ describe('Index Tests', () => {
 
   it('index returns 200 if preflight request', async () => {
     const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=bar', {
-      method: 'OPTIONS'
+      method: 'OPTIONS',
     }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',

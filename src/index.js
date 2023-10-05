@@ -44,7 +44,6 @@ async function run(request, context) {
     });
   }
 
-  
   if (request.method === 'OPTIONS') {
     return new Response('Preflight request valid', {
       status: 200,
