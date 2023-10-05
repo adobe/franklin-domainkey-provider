@@ -43,6 +43,16 @@ async function run(request, context) {
       status: 500,
     });
   }
+
+  if (request.method === 'OPTIONS') {
+    return new Response('Preflight request valid', {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
+
   /* c8 ignore start */
   if (token && request.method === 'POST') {
     FronteggContext.init({
