@@ -45,12 +45,14 @@ async function run(request, context) {
   }
 
   if (request.method === 'OPTIONS') {
+    /*
     return new Response('Preflight request valid', {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
     });
+    */
   }
 
   /* c8 ignore start */
