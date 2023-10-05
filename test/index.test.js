@@ -24,6 +24,18 @@ describe('Index Tests', () => {
     assert.strictEqual(await result.text(), 'No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error');
   });
 
+  it('index returns 200 if preflight request', async () => {
+    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=bar', {
+      method: 'OPTIONS'
+    }), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 200);
+  });
+
   it('index requires a domain', async () => {
     const result = await main(new Request('https://localhost/'), {
       env: {
