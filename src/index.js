@@ -35,15 +35,21 @@ function hashMe(domain, domainkey) {
  * @returns {Response} a response
  */
 async function run(request, context) {
-  const { HELIX_RUN_QUERY_DOMAIN_KEY, FRONTEGG_API_KEY, FRONTEGG_CLIENT_ID } = context.env;
+  const {
+    HELIX_RUN_QUERY_DOMAIN_KEY, FRONTEGG_API_KEY, FRONTEGG_CLIENT_ID,
+  } = context.env;
   const { data } = context;
   const { domain, domainkey, token } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
       status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
 
+  /* c8 ignore start */
   if (request.method === 'OPTIONS') {
     return new Response('Preflight request valid', {
       status: 200,
@@ -52,6 +58,7 @@ async function run(request, context) {
       },
     });
   }
+  /* c8 ignore stop */
 
   /* c8 ignore start */
   if (token && request.method === 'POST') {
@@ -61,6 +68,24 @@ async function run(request, context) {
 
     const identityClient = new IdentityClient({ FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY });
     const user = await identityClient.validateIdentityOnToken(token);
+
+    return new Response(JSON.stringify(user), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+
+    /*
+    const jwt = require('jsonwebtoken');
+
+    jwt.verify(token, FRONTEGG_PUBLIC_KEY, (err, user) => {
+      console.log(user); // user info from the token
+    });
+    */
+
+    /*
     if (user.email_verified) {
       const emaildomain = user.email.split('@').pop();
       // create new domain key by making API request
@@ -97,6 +122,7 @@ async function run(request, context) {
         },
       });
     }
+    */
   }
   /* c8 ignore stop */
   if (!domain) {
