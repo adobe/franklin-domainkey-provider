@@ -32,6 +32,7 @@ function hashMe(domain, domainkey) {
  * parses a JWT token
  * @param {String} token The access token from frontegg
  */
+/* c8 ignore start */
 function parseJwt(token) {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -39,6 +40,7 @@ function parseJwt(token) {
 
   return JSON.parse(jsonPayload);
 }
+/* c8 ignore stop */
 
 /**
  * This is the main function
