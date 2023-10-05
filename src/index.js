@@ -74,12 +74,16 @@ async function run(request, context) {
       if (!res.ok || json.results.data[0].status !== 'success') {
         return new Response(`Error while rotating domain keys: ${res.statusText}`, {
           status: 503,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
         });
       }
       return new Response(JSON.stringify(json.results.data[0]), {
         status: 201,
         headers: {
           'content-type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       });
     }
@@ -88,6 +92,9 @@ async function run(request, context) {
   if (!domain) {
     return new Response('No domain specified', {
       status: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
   if (!domainkey) {
@@ -110,6 +117,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
         'Content-Type': 'text/plain',
         'x-error': 'domainkey not set',
         'x-domainkey': newkey,
+        'Access-Control-Allow-Origin': '*',
       },
     });
   }
@@ -127,6 +135,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       status: 404,
       headers: {
         'x-error': 'TXT record not found',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   }
@@ -135,6 +144,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       status: 403,
       headers: {
         'x-error': 'TXT record does not match',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   }
@@ -157,11 +167,17 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
   if (!res.ok || json.results.data[0].key !== domainkey) {
     return new Response(`Error while rotating domain keys: ${res.statusText}`, {
       status: 503,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
   const confirmedkey = json.results.data[0].key;
   return new Response(`TXT record for ${txt} contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
     status: 201,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
   });
 }
 
