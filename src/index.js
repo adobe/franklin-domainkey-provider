@@ -17,7 +17,7 @@ import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
-import { IdentityClient, FronteggContext } from '@frontegg/client';
+// import { IdentityClient, FronteggContext } from '@frontegg/client';
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -29,6 +29,18 @@ function hashMe(domain, domainkey) {
 }
 
 /**
+ * parses a JWT token
+ * @param {String} token The access token from frontegg
+ */
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`).join(''));
+
+  return JSON.parse(jsonPayload);
+}
+
+/**
  * This is the main function
  * @param {Request} request the request object (see fetch api)
  * @param {UniversalContext} context the context of the universal serverless function
@@ -36,6 +48,7 @@ function hashMe(domain, domainkey) {
  */
 async function run(request, context) {
   const {
+    // eslint-disable-next-line no-unused-vars
     HELIX_RUN_QUERY_DOMAIN_KEY, FRONTEGG_API_KEY, FRONTEGG_CLIENT_ID,
   } = context.env;
   const { data } = context;
@@ -62,12 +75,16 @@ async function run(request, context) {
 
   /* c8 ignore start */
   if (token && request.method === 'POST') {
+    /*
     FronteggContext.init({
       FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY,
     });
 
     const identityClient = new IdentityClient({ FRONTEGG_CLIENT_ID, FRONTEGG_API_KEY });
     const user = await identityClient.validateIdentityOnToken(token);
+    */
+
+    const user = parseJwt(token);
 
     return new Response(JSON.stringify(user), {
       status: 200,
