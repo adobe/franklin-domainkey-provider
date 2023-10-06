@@ -73,6 +73,7 @@ async function run(request, context) {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -82,58 +83,71 @@ async function run(request, context) {
   if (token && request.method === 'POST') {
     const user = parseJwt(token);
 
-    if (user && user.email_verified) {
-      const emaildomain = user.email.split('@').pop();
+    if (user) {
+      if (user.email_verified) {
+        const emaildomain = user.email.split('@').pop();
 
-      // set defaults for domain key creation
-      let urlforkey = emaildomain;
-      // 7 days from now, in YYYY-MM-DD format
-      let expiryforkey = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        // set defaults for domain key creation
+        let urlforkey = emaildomain;
+        // 7 days from now, in YYYY-MM-DD format
+        let expiryforkey = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      // Adobe employees have more flexibility in domain key creation
-      if (emaildomain === 'adobe.com') {
-        if (domain) {
-          urlforkey = domain;
-        } else {
-          urlforkey = '';
+        // Adobe employees have more flexibility in domain key creation
+        if (emaildomain === 'adobe.com') {
+          if (domain) {
+            urlforkey = domain;
+          } else {
+            urlforkey = '';
+          }
+          // domain key to expire either on given date or never
+          expiryforkey = expiry;
         }
-        // domain key to expire either on given date or never
-        expiryforkey = expiry;
-      }
 
-      // create new domain key by making API request
-      const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
-      const body = {
-        url: urlforkey,
-        newkey: domainkey,
-        domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
-        readonly: true,
-        note: 'from franklin-domainkey-provider',
-        expiry: expiryforkey,
-      };
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const json = await res.json();
-      if (!res.ok || json.results.data[0].status !== 'success') {
-        return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+        // create new domain key by making API request
+        const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
+        const body = {
+          url: urlforkey,
+          newkey: domainkey,
+          domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
+          readonly: true,
+          note: 'from franklin-domainkey-provider',
+          expiry: expiryforkey,
+        };
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const json = await res.json();
+        if (!res.ok || json.results.data[0].status !== 'success') {
+          return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+            status: 503,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type',
+            },
+          });
+        }
+        return new Response(JSON.stringify(json.results.data[0]), {
+          status: 201,
+          headers: {
+            'content-type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        });
+      } else {
+        // email not verified
+        return new Response('Email not verified', {
           status: 503,
           headers: {
             'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
           },
         });
       }
-      return new Response(JSON.stringify(json.results.data[0]), {
-        status: 201,
-        headers: {
-          'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
     }
   }
   /* c8 ignore stop */
@@ -143,6 +157,7 @@ async function run(request, context) {
       status: 400,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -167,6 +182,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
         'x-error': 'domainkey not set',
         'x-domainkey': newkey,
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -185,6 +201,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       headers: {
         'x-error': 'TXT record not found',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -194,6 +211,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       headers: {
         'x-error': 'TXT record does not match',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -218,6 +236,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
       status: 503,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
@@ -226,6 +245,7 @@ curl -X POST -F "domain=${domain}" -F "domainkey=${newkey}" ${currentURL}
     status: 201,
     headers: {
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
 }
