@@ -55,7 +55,7 @@ async function run(request, context) {
   } = context.env;
   const { data } = context;
   const {
-    domain, expiry, domainkey, token, dktoken,
+    domain, expiry, domainkey, token,
   } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
@@ -81,59 +81,52 @@ async function run(request, context) {
 
   /* c8 ignore start */
   // from domainkey generator
-  if (dktoken && request.method === 'POST') {
-    const user = parseJwt(dktoken);
+  const origin = request.headers.get('Origin');
+  if ((origin === 'https://generate--domainkey--langswei.hlx.live' || origin === 'http://localhost:3000') && request.method === 'POST') {
+    // create new domain key by making API request
+    const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
+    const body = {
+      domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
+      readonly: true,
+      note: 'from domainkey generator',
+    };
 
-    if (user && user.email) {
-      const email = user.email.split('@')[0];
+    // append optional params
+    if (domain) {
+      body.url = domain;
+    }
+    if (expiry) {
+      body.expiry = expiry;
+    }
+    if (domainkey) {
+      body.newkey = domainkey;
+    }
 
-      // for domain key creation
-      let urlforkey = '';
-      if (domain) {
-        urlforkey = domain;
-      }
-
-      // create new domain key by making API request
-      const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
-      const body = {
-        url: urlforkey,
-        domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
-        readonly: true,
-        note: `from domainkey generator by ${email} - ${request.headers.get('Origin')} - ${request.headers.get('origin')}`,
-      };
-      if (expiry) {
-        body.expiry = expiry;
-      }
-      if (domainkey) {
-        body.newkey = domainkey;
-      }
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(body),
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const json = await res.json();
+    if (!res.ok || json.results.data[0].status !== 'success') {
+      return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+        status: 503,
         headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const json = await res.json();
-      if (!res.ok || json.results.data[0].status !== 'success') {
-        return new Response(`Error while rotating domain keys: ${res.statusText}`, {
-          status: 503,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
-        });
-      }
-      return new Response(JSON.stringify(json.results.data[0]), {
-        status: 201,
-        headers: {
-          'content-type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type',
         },
       });
     }
+    return new Response(JSON.stringify(json.results.data[0]), {
+      status: 201,
+      headers: {
+        'content-type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   }
 
   // from frontegg
