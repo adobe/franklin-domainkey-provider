@@ -82,7 +82,7 @@ async function run(request, context) {
   /* c8 ignore start */
   // from domainkey generator
   const origin = request.headers.get('Origin');
-  if ((origin === 'https://generate--domainkey--langswei.hlx.live' || origin === 'http://localhost:3000') && request.method === 'POST') {
+  if (origin === 'https://generate--domainkey--langswei.hlx.live' && request.method === 'POST') {
     // create new domain key by making API request
     const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
     const body = {
