@@ -99,7 +99,7 @@ async function run(request, context) {
         url: urlforkey,
         domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
         readonly: true,
-        note: `from domainkey generator by ${email}`,
+        note: `from domainkey generator by ${email} - ${request.headers.get('Origin')} - ${request.headers.get('origin')}`,
       };
       if (expiry) {
         body.expiry = expiry;
