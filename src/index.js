@@ -85,26 +85,30 @@ async function run(request, context) {
     const user = parseJwt(dktoken);
 
     if (user && user.email) {
-      const email = user.email.split('@')[0];
+      // const email = user.email.split('@')[0];
 
       // for domain key creation
       let urlforkey = '';
       let expiryforkey = '';
+      let domainkeyforkey = '';
       if (domain) {
         urlforkey = domain;
       }
       if (expiry) {
         expiryforkey = expiry;
       }
+      if (domainkey) {
+        domainkeyforkey = domainkey;
+      }
 
       // create new domain key by making API request
       const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
       const body = {
         url: urlforkey,
-        newkey: domainkey,
+        newkey: domainkeyforkey,
         domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
         readonly: true,
-        note: `from domainkey generator by ${email}`,
+        note: 'from domainkey generator',
         expiry: expiryforkey,
       };
       const res = await fetch(endpoint, {
