@@ -55,7 +55,7 @@ async function run(request, context) {
   } = context.env;
   const { data } = context;
   const {
-    domain, expiry, domainkey, token,
+    domain, expiry, domainkey, token, dktoken,
   } = data;
   if (!HELIX_RUN_QUERY_DOMAIN_KEY) {
     return new Response('No HELIX_RUN_QUERY_DOMAIN_KEY set. This is a configuration error', {
@@ -80,6 +80,62 @@ async function run(request, context) {
   /* c8 ignore stop */
 
   /* c8 ignore start */
+  // from domainkey generator
+  if (dktoken && request.method === 'POST') {
+    const user = parseJwt(dktoken);
+
+    if (user && user.email) {
+      const email = user.email.split('@')[0];
+
+      // for domain key creation
+      let urlforkey = '';
+      let expiryforkey = '';
+      if (domain) {
+        urlforkey = domain;
+      }
+      if (expiry) {
+        expiryforkey = expiry;
+      }
+
+      // create new domain key by making API request
+      const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
+      const body = {
+        url: urlforkey,
+        newkey: domainkey,
+        domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
+        readonly: true,
+        note: `from domainkey generator by ${email}`,
+        expiry: expiryforkey,
+      };
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || json.results.data[0].status !== 'success') {
+        return new Response(`Error while rotating domain keys: ${res.statusText}`, {
+          status: 503,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        });
+      }
+      return new Response(JSON.stringify(json.results.data[0]), {
+        status: 201,
+        headers: {
+          'content-type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
+  }
+
+  // from frontegg
   if (token && request.method === 'POST') {
     const user = parseJwt(token);
 
