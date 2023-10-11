@@ -89,37 +89,25 @@ async function run(request, context) {
 
       // for domain key creation
       let urlforkey = '';
-      let expiryforkey = '';
-      let domainkeyforkey = '';
       if (domain) {
         urlforkey = domain;
-      }
-      if (expiry) {
-        expiryforkey = expiry;
-      }
-      if (domainkey) {
-        domainkeyforkey = domainkey;
       }
 
       // create new domain key by making API request
       const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
-      let body = {
+      const body = {
         url: urlforkey,
-        newkey: domainkeyforkey,
         domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
         readonly: true,
         note: `from domainkey generator by ${email}`,
       };
-      if (expiryforkey) {
-        body = {
-          url: urlforkey,
-          newkey: domainkeyforkey,
-          domainkey: HELIX_RUN_QUERY_DOMAIN_KEY,
-          readonly: true,
-          note: `from domainkey generator by ${email}`,
-          expiry: expiryforkey,
-        };
+      if (expiry) {
+        body.expiry = expiry;
       }
+      if (domainkey) {
+        body.newkey = domainkey;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(body),
