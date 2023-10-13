@@ -21,7 +21,7 @@ curl https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domai
 It will tell you that it needs a `domain` parameter, so we try again
 
 ```bash
-curl -F domain=example.com https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
+curl "https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/?domain=example.com"
 ```
 
 This will return instruction on setting completing the callenge. The response
@@ -29,7 +29,7 @@ contains a domain key that will be a UUID like `f4a5cb7f-adac-450c-919f-a12b13ce
 as well as a challenge that is a hash of the domain key and your domain like
 `4a159285c173d7ac98a3e20c746b46d191ea14dd53214b42a2f6ed36f7d2aeb7`
 
-Create a TXT record for `_rum_-challenge.example.com` with the value of the challenge. 
+Create a TXT record for `_rum-challenge.example.com` with the value of the challenge. 
 You can verify that the record has been set using `dig`
 
 ```bash
@@ -40,7 +40,7 @@ Once the record is set, you can call the service again to verify that the challe
 has been completed and start issuing domain keys.
 
 ```bash
-curl -F domain=example.com -F domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116 https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
+curl domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116 "https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/?domain=example.com&domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116"
 ```
 
 If the domain key has been verified and activated, you will see a response status of
