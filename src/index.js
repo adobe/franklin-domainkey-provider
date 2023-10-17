@@ -43,7 +43,7 @@ async function run(request, context) {
     });
   }
   if (!domain) {
-    return new Response('No domain specified', {
+    return new Response('No domain specified. ' + JSON.stringify(context), {
       status: 400,
     });
   }
