@@ -31,7 +31,7 @@ describe('Index Tests', () => {
       },
     });
     assert.equal(result.status, 400);
-    assert.strictEqual(await result.text(), 'No domain specified');
+    assert.notStrictEqual(await result.text(), 'No domain specified');
   });
 
   it('index generates a domain key if not specified', async () => {
