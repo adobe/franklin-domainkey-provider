@@ -37,7 +37,7 @@ describe('Index Tests', () => {
   it('index generates a domain key if not specified', async () => {
     const result = await main(new Request('https://localhost/', {
       method: 'POST',
-      body: 'domain=example.com'
+      body: 'domain=example.com',
     }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
