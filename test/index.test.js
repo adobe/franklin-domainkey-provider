@@ -54,7 +54,13 @@ describe('Index Tests', () => {
   });
 
   it('index returns 404 if text record is not set', async () => {
-    const result = await main(new Request('https://localhost/?domain=example.com&domainkey=foo'), {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=example.com&domainkey=foo',
+    }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
       },
@@ -64,7 +70,13 @@ describe('Index Tests', () => {
   });
 
   it('index returns 403 if text record is set but wrong', async () => {
-    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=bar'), {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=johansminecraft.club&domainkey=bar',
+    }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'foo',
       },
@@ -74,7 +86,13 @@ describe('Index Tests', () => {
   });
 
   it('index returns 503 if rotating the domainkey failed for backend reasons', async () => {
-    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=johansminecraft.club&domainkey=foo',
+    }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: 'baz', // this key is wrong on purpose, so that the update won't go through
       },
@@ -84,7 +102,13 @@ describe('Index Tests', () => {
   }).timeout(50000);
 
   it('index returns 201 if rotating the domainkey worked as expected', async () => {
-    const result = await main(new Request('https://localhost/?domain=johansminecraft.club&domainkey=foo'), {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=johansminecraft.club&domainkey=foo',
+    }), {
       env: {
         HELIX_RUN_QUERY_DOMAIN_KEY: process.env.TEST_DOMAINKEY, // this one is real,
         // but only for one domain
