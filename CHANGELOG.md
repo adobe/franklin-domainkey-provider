@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.2...v1.0.3) (2023-10-24)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-universal-logger to v3.0.12 ([#32](https://github.com/adobe/franklin-domainkey-provider/issues/32)) ([329fc3e](https://github.com/adobe/franklin-domainkey-provider/commit/329fc3e08c5357177e10e26158a83ab4f0ace67c))
+
 ## [1.0.2](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.1...v1.0.2) (2023-10-07)
 
 

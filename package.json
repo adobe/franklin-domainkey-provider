@@ -1,6 +1,6 @@
 {
   "name": "@adobe/franklin-domainkey-provider",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Franklin Domainkey Provider",
   "main": "src/index.js",
