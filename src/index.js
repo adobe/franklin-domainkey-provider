@@ -63,11 +63,12 @@ async function validateDNS(domain, context, hash, confirmedkey) {
  * @param {string} hash
  * @param {string} confirmedkey
  */
-async function validateHTTP(domain, context, hash, confirmedkey) {
-  const req = new Request(`https://${domain}/_rum-challenge`, {
+async function validateHTTP(domain, _context, hash, confirmedkey) {
+  const res = await fetch(`https://${domain}/_rum-challenge`, {
     method: 'OPTIONS',
   });
-  const res = await fetch(req);
+  // always read the body, otherwise the connection is not closed
+  await res.text();
   if (res.status !== 204) {
     return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
       status: 503,
