@@ -60,6 +60,12 @@ the record is added, you can verify that it is set up correctly by making a POST
 the domain and domainkey parameters. For example:
 
 curl -X POST -d "domain=${domain}&domainkey=${newkey}" ${currentURL}
+
+Alternatively, use the HTTP challenge and provide a resource at https://${domain}/_rum-challenge that responds to
+an OPTIONS request with a 204 status code and following headers:
+- x-rum-challenge: ${hash}
+
+If you are using *.hlx.live as your CDN origin, these headers will be added automatically.
 `;
     return new Response(instructions, {
       status: 404,
