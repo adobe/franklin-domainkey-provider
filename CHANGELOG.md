@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.3...v1.0.4) (2023-10-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/fetch to v4.1.1 ([#34](https://github.com/adobe/franklin-domainkey-provider/issues/34)) ([6c6e046](https://github.com/adobe/franklin-domainkey-provider/commit/6c6e046671368fa0c16f2081bc2985799a0f3dc6))
+
 ## [1.0.3](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.2...v1.0.3) (2023-10-24)
 
 
