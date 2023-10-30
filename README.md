@@ -12,6 +12,22 @@
 
 ## Usage
 
+### Local
+
+Franklin Domainkey Provider can be run locally using the following command:
+
+```bash
+npm run dev
+```
+
+This will start a local server on port 8080. The server can be called using the following sample cURL command:
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"domain":"example.com"}' http://localhost:3000
+```
+
+### Remote
+
 Start by calling the service
 
 ```bash
