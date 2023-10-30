@@ -27,6 +27,35 @@ function hashMe(domain, domainkey) {
   return hash.digest('hex');
 }
 
+async function validateDNS(domain, context, hash, confirmedkey) {
+  const txt = `_rum-challenge.${domain}`;
+  let txtrecords = [];
+  try {
+    txtrecords = await resolveTxtAsync(txt);
+  } catch (e) {
+    context.logger.error(`Error while resolving TXT record for ${txt}: ${e.message}`);
+  }
+  if (txtrecords.length === 0) {
+    return new Response(`No TXT record found for ${txt}`, {
+      status: 404,
+      headers: {
+        'x-error': 'TXT record not found',
+      },
+    });
+  }
+  if (txtrecords[0].indexOf(hash) === -1) {
+    return new Response(`TXT record for ${txt} does not contain ${hash}`, {
+      status: 403,
+      headers: {
+        'x-error': 'TXT record does not match',
+      },
+    });
+  }
+  return new Response(`TXT record for ${txt} contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
+    status: 201,
+  });
+}
+
 /**
  * This is the main function
  * @param {Request} request the request object (see fetch api)
@@ -78,29 +107,12 @@ If you are using *.hlx.live as your CDN origin, these headers will be added auto
   }
   // the domain key is set, so verify that the TXT record is set up correctly
   const hash = hashMe(domain, domainkey);
-  const txt = `_rum-challenge.${domain}`;
-  let txtrecords = [];
-  try {
-    txtrecords = await resolveTxtAsync(txt);
-  } catch (e) {
-    context.logger.error(`Error while resolving TXT record for ${txt}: ${e.message}`);
+  const response = await validateDNS(domain, context, hash, domainkey);
+  if (response.status !== 201) {
+    // there has been an error, so return it
+    return response;
   }
-  if (txtrecords.length === 0) {
-    return new Response(`No TXT record found for ${txt}`, {
-      status: 404,
-      headers: {
-        'x-error': 'TXT record not found',
-      },
-    });
-  }
-  if (txtrecords[0].indexOf(hash) === -1) {
-    return new Response(`TXT record for ${txt} does not contain ${hash}`, {
-      status: 403,
-      headers: {
-        'x-error': 'TXT record does not match',
-      },
-    });
-  }
+
   // create new domain key by making API request
   const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
   const body = {
@@ -122,10 +134,7 @@ If you are using *.hlx.live as your CDN origin, these headers will be added auto
       status: 503,
     });
   }
-  const confirmedkey = json.results.data[0].key;
-  return new Response(`TXT record for ${txt} contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
-    status: 201,
-  });
+  return response;
 }
 
 export const main = wrap(run)
