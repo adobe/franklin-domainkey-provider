@@ -70,7 +70,7 @@ async function validateHTTP(domain, context, hash, confirmedkey) {
   const res = await fetch(req);
   if (res.status !== 204) {
     return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
-      status: 404,
+      status: 503,
     });
   }
   const challenge = res.headers.get('x-rum-challenge');
@@ -144,9 +144,14 @@ If you are using *.hlx.live as your CDN origin, these headers will be added auto
   }
   // the domain key is set, so verify that the TXT record is set up correctly
   const hash = hashMe(domain, domainkey);
-  const response = await validateDNS(domain, context, hash, domainkey);
+  const [response] = (await Promise.all([
+    validateDNS(domain, context, hash, domainkey),
+    validateHTTP(domain, context, hash, domainkey),
+  ]))
+    // sort responses by status code, so that the first one is the best one
+    .sort((a, b) => a.status - b.status);
   if (response.status !== 201) {
-    // there has been an error, so return it
+    // if the validation failed, return the response
     return response;
   }
 
