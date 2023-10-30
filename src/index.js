@@ -55,6 +55,43 @@ async function validateDNS(domain, context, hash, confirmedkey) {
     status: 201,
   });
 }
+/**
+ * HTTP challenge validation makes a request to https://${domain}/_rum-challenge and expects
+ * a 204 response with an x-rum-challenge header containing the hash.
+ * @param {string} domain
+ * @param {Context} context
+ * @param {string} hash
+ * @param {string} confirmedkey
+ */
+async function validateHTTP(domain, context, hash, confirmedkey) {
+  const req = new Request(`https://${domain}/_rum-challenge`, {
+    method: 'OPTIONS',
+  });
+  const res = await fetch(req);
+  if (res.status !== 204) {
+    return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
+      status: 404,
+    });
+  }
+  const challenge = res.headers.get('x-rum-challenge');
+  if (!challenge) {
+    return new Response('Error while validating HTTP challenge: no x-rum-challenge header set', {
+      status: 404,
+    });
+  }
+  const challenges = challenge.split(' ');
+  if (challenges.find((c) => c === hash)) {
+    return new Response(`HTTP challenge for https://${domain}/_rum-challenge contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
+      status: 201,
+    });
+  }
+  return new Response(`HTTP challenge for https://${domain}/_rum-challenge does not contain ${hash}`, {
+    status: 403,
+    headers: {
+      'x-error': 'HTTP challenge does not match',
+    },
+  });
+}
 
 /**
  * This is the main function
