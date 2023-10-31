@@ -115,10 +115,10 @@ async function validateHTTP(domain, _context, hash, confirmedkey) {
     return new Response(`Error while validating HTTP challenge: ${e.message}`, {
       status: 503,
     });
-    /* c8 ignore stop */
   } finally {
     clearTimeout(timerId);
   }
+  /* c8 ignore stop */
 }
 
 /**
