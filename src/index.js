@@ -12,11 +12,18 @@
 import wrap from '@adobe/helix-shared-wrap';
 import { logger } from '@adobe/helix-universal-logger';
 import { helixStatus } from '@adobe/helix-status';
-import { Response, fetch } from '@adobe/fetch';
+import {
+  Response,
+  h1NoCache, AbortController, AbortError,
+} from '@adobe/fetch';
 import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
+
+const { fetch } = h1NoCache({
+  userAgent: 'franklin-domainkey-provider/1.0',
+});
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -64,34 +71,54 @@ async function validateDNS(domain, context, hash, confirmedkey) {
  * @param {string} confirmedkey
  */
 async function validateHTTP(domain, _context, hash, confirmedkey) {
-  const res = await fetch(`https://${domain}/_rum-challenge`, {
-    method: 'OPTIONS',
-  });
-  // always read the body, otherwise the connection is not closed
-  await res.text();
-  if (res.status !== 204) {
-    return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
+  _context.logger.log('validating HTTP challenge', domain);
+  const controller = new AbortController();
+  const timerId = setTimeout(() => controller.abort(), 1000);
+  const { signal } = controller;
+  try {
+    const res = await fetch(`https://${domain}/_rum-challenge`, {
+      method: 'OPTIONS',
+      signal,
+    });
+    // always read the body, otherwise the connection is not closed
+    await res.text();
+    if (res.status !== 204) {
+      return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
+        status: 503,
+      });
+    }
+    const challenge = res.headers.get('x-rum-challenge');
+    if (!challenge) {
+      return new Response('Error while validating HTTP challenge: no x-rum-challenge header set', {
+        status: 404,
+      });
+    }
+    const challenges = challenge.split(' ');
+    if (challenges.find((c) => c === hash)) {
+      return new Response(`HTTP challenge for https://${domain}/_rum-challenge contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
+        status: 201,
+      });
+    }
+    return new Response(`HTTP challenge for https://${domain}/_rum-challenge does not contain ${hash}`, {
+      status: 403,
+      headers: {
+        'x-error': 'HTTP challenge does not match',
+      },
+    });
+  } catch (e) {
+    if (e instanceof AbortError) {
+      return new Response(`Timeout while validating HTTP challenge: ${e.message}`, {
+        status: 504,
+      });
+    }
+    /* c8 ignore start */
+    return new Response(`Error while validating HTTP challenge: ${e.message}`, {
       status: 503,
     });
+    /* c8 ignore stop */
+  } finally {
+    clearTimeout(timerId);
   }
-  const challenge = res.headers.get('x-rum-challenge');
-  if (!challenge) {
-    return new Response('Error while validating HTTP challenge: no x-rum-challenge header set', {
-      status: 404,
-    });
-  }
-  const challenges = challenge.split(' ');
-  if (challenges.find((c) => c === hash)) {
-    return new Response(`HTTP challenge for https://${domain}/_rum-challenge contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
-      status: 201,
-    });
-  }
-  return new Response(`HTTP challenge for https://${domain}/_rum-challenge does not contain ${hash}`, {
-    status: 403,
-    headers: {
-      'x-error': 'HTTP challenge does not match',
-    },
-  });
 }
 
 /**
