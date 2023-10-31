@@ -116,6 +116,38 @@ describe('Index Tests', () => {
     assert.equal(result.status, 404);
   });
 
+  it('index returns 201 if correct rum challenge header is returned', async () => {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=minivelos.bike&domainkey=foo',
+    }), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'baz',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 503); // update failed intentionally
+  }).timeout(50000);
+
+  it('index returns 403 if wrong rum challenge header is returned', async () => {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=forward.minivelos.workers.dev&domainkey=foo',
+    }), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'baz',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 403);
+  });
+
   it('index returns 201 if rotating the domainkey worked as expected', async () => {
     const result = await main(new Request('https://localhost/', {
       headers: {
