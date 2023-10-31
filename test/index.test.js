@@ -50,7 +50,6 @@ describe('Index Tests', () => {
     const newkey = result.headers.get('x-domainkey');
     const txt = await result.text();
     assert(txt.indexOf(newkey) >= 0);
-    console.log(txt);
   });
 
   it('index returns 404 if text record is not set', async () => {
@@ -100,6 +99,22 @@ describe('Index Tests', () => {
     });
     assert.equal(result.status, 503);
   }).timeout(50000);
+
+  it('index returns 404 if no rum challenge header is returned', async () => {
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'POST',
+      body: 'domain=eomfpog1mphtbgh.m.pipedream.net&domainkey=foo',
+    }), {
+      env: {
+        HELIX_RUN_QUERY_DOMAIN_KEY: 'baz',
+      },
+      logger: console,
+    });
+    assert.equal(result.status, 404);
+  });
 
   it('index returns 201 if rotating the domainkey worked as expected', async () => {
     const result = await main(new Request('https://localhost/', {
