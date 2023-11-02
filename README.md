@@ -1,6 +1,6 @@
 # Franklin Domainkey Provider
 
-> Create domainkeys for your domain by completing a DNS challenge
+> Create domainkeys for your domain by completing a DNS or HTTP challenge
 
 ## Status
 [![codecov](https://img.shields.io/codecov/c/github/adobe/franklin-domainkey-provider.svg)](https://codecov.io/gh/adobe/franklin-domainkey-provider)
@@ -15,13 +15,13 @@
 Start by calling the service
 
 ```bash
-curl https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
+$ curl https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
 ```
 
 It will tell you that it needs a `domain` parameter, so we try again
 
 ```bash
-curl -X POST -d domain=example.com https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
+$ curl -X POST -d domain=example.com https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
 ```
 
 This will return instruction on setting completing the callenge. The response
@@ -29,11 +29,15 @@ contains a domain key that will be a UUID like `f4a5cb7f-adac-450c-919f-a12b13ce
 as well as a challenge that is a hash of the domain key and your domain like
 `4a159285c173d7ac98a3e20c746b46d191ea14dd53214b42a2f6ed36f7d2aeb7`
 
+There are now two ways to complete the challenge, either by setting a DNS record, or by providing an HTTP response.
+
+### DNS Challenge
+
 Create a TXT record for `_rum_-challenge.example.com` with the value of the challenge. 
 You can verify that the record has been set using `dig`
 
 ```bash
-dig TXT _rum-challenge.example.com
+$ dig TXT _rum-challenge.example.com
 ```
 
 Once the record is set, you can call the service again to verify that the challenge
@@ -45,6 +49,26 @@ curl -X POST -d "domain=example.com&domainkey=f4a5cb7f-adac-450c-919f-a12b13cec1
 
 If the domain key has been verified and activated, you will see a response status of
 201. If the domain key has not been verified, you will see a response status of 403.
+
+### HTTP Challenge
+
+If you are using `*.hlx.live` as your origin, your CDN is already set up to complete the challenge.
+
+If not, ensure that at `https://example.com/_rum-challenge` a response with the status code `204` and following response headers is created
+- `x-rum-challenge`: the challenge value or a list of challenge values separated by a space
+
+You can verify that the challenge has been set using `curl`
+
+```bash
+$ curl -s -I https://example.com/_rum-challenge | grep x-rum-challenge
+x-rum-challenge: 4a159285c173d7ac98a3e20c746b46d191ea14dd53214b42a2f6ed36f7d2aeb7
+```
+
+Once the challenge has been set, you can call the service again to verify that the challenge has been completed and start issuing domain keys.
+
+```bash
+$ curl -X POST -d "domain=example.com&domainkey=f4a5cb7f-adac-450c-919f-a12b13cec116" https://eynvwoxb7l.execute-api.us-east-1.amazonaws.com/helix-services/domainkey-provider/v1/
+```
 
 ## Development
 

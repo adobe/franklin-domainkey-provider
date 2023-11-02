@@ -12,11 +12,18 @@
 import wrap from '@adobe/helix-shared-wrap';
 import { logger } from '@adobe/helix-universal-logger';
 import { helixStatus } from '@adobe/helix-status';
-import { Response, fetch } from '@adobe/fetch';
+import {
+  Response,
+  h1NoCache, AbortController, AbortError,
+} from '@adobe/fetch';
 import bodyData from '@adobe/helix-shared-body-data';
 import { randomUUID, createHash } from 'crypto';
 import { resolveTxt } from 'dns';
 import { promisify } from 'util';
+
+const { fetch } = h1NoCache({
+  userAgent: 'franklin-domainkey-provider/1.0',
+});
 
 const resolveTxtAsync = promisify(resolveTxt);
 
@@ -25,6 +32,93 @@ function hashMe(domain, domainkey) {
   hash.update(domain);
   hash.update(domainkey);
   return hash.digest('hex');
+}
+
+async function validateDNS(domain, context, hash, confirmedkey) {
+  const txt = `_rum-challenge.${domain}`;
+  let txtrecords = [];
+  try {
+    txtrecords = await resolveTxtAsync(txt);
+  } catch (e) {
+    context.logger.error(`Error while resolving TXT record for ${txt}: ${e.message}`);
+  }
+  if (txtrecords.length === 0) {
+    return new Response(`No TXT record found for ${txt}`, {
+      status: 404,
+      headers: {
+        'x-error': 'TXT record not found',
+      },
+    });
+  }
+  if (txtrecords[0].indexOf(hash) === -1) {
+    return new Response(`TXT record for ${txt} does not contain ${hash}`, {
+      status: 403,
+      headers: {
+        'x-error': 'TXT record does not match',
+      },
+    });
+  }
+  return new Response(`TXT record for ${txt} contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
+    status: 201,
+  });
+}
+/**
+ * HTTP challenge validation makes a request to https://${domain}/_rum-challenge and expects
+ * a 204 response with an x-rum-challenge header containing the hash.
+ * @param {string} domain
+ * @param {Context} context
+ * @param {string} hash
+ * @param {string} confirmedkey
+ */
+async function validateHTTP(domain, _context, hash, confirmedkey) {
+  _context.logger.log('validating HTTP challenge', domain);
+  const controller = new AbortController();
+  const timerId = setTimeout(() => controller.abort(), 1000);
+  const { signal } = controller;
+  try {
+    const res = await fetch(`https://${domain}/_rum-challenge`, {
+      method: 'OPTIONS',
+      signal,
+    });
+    // always read the body, otherwise the connection is not closed
+    await res.text();
+    if (res.status !== 204) {
+      return new Response(`Error while validating HTTP challenge: ${res.statusText} is not a valid 204 status`, {
+        status: 503,
+      });
+    }
+    const challenge = res.headers.get('x-rum-challenge');
+    if (!challenge) {
+      return new Response('Error while validating HTTP challenge: no x-rum-challenge header set', {
+        status: 404,
+      });
+    }
+    const challenges = challenge.split(' ');
+    if (challenges.find((c) => c === hash)) {
+      return new Response(`HTTP challenge for https://${domain}/_rum-challenge contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
+        status: 201,
+      });
+    }
+    return new Response(`HTTP challenge for https://${domain}/_rum-challenge does not contain ${hash}`, {
+      status: 403,
+      headers: {
+        'x-error': 'HTTP challenge does not match',
+      },
+    });
+  } catch (e) {
+    if (e instanceof AbortError) {
+      return new Response(`Timeout while validating HTTP challenge: ${e.message}`, {
+        status: 504,
+      });
+    }
+    /* c8 ignore start */
+    return new Response(`Error while validating HTTP challenge: ${e.message}`, {
+      status: 503,
+    });
+  } finally {
+    clearTimeout(timerId);
+  }
+  /* c8 ignore stop */
 }
 
 /**
@@ -60,6 +154,12 @@ the record is added, you can verify that it is set up correctly by making a POST
 the domain and domainkey parameters. For example:
 
 curl -X POST -d "domain=${domain}&domainkey=${newkey}" ${currentURL}
+
+Alternatively, use the HTTP challenge and provide a resource at https://${domain}/_rum-challenge that responds to
+an OPTIONS request with a 204 status code and following headers:
+- x-rum-challenge: ${hash}
+
+If you are using *.hlx.live as your CDN origin, these headers will be added automatically.
 `;
     return new Response(instructions, {
       status: 404,
@@ -72,29 +172,17 @@ curl -X POST -d "domain=${domain}&domainkey=${newkey}" ${currentURL}
   }
   // the domain key is set, so verify that the TXT record is set up correctly
   const hash = hashMe(domain, domainkey);
-  const txt = `_rum-challenge.${domain}`;
-  let txtrecords = [];
-  try {
-    txtrecords = await resolveTxtAsync(txt);
-  } catch (e) {
-    context.logger.error(`Error while resolving TXT record for ${txt}: ${e.message}`);
+  const [response] = (await Promise.all([
+    validateDNS(domain, context, hash, domainkey),
+    validateHTTP(domain, context, hash, domainkey),
+  ]))
+    // sort responses by status code, so that the first one is the best one
+    .sort((a, b) => a.status - b.status);
+  if (response.status !== 201) {
+    // if the validation failed, return the response
+    return response;
   }
-  if (txtrecords.length === 0) {
-    return new Response(`No TXT record found for ${txt}`, {
-      status: 404,
-      headers: {
-        'x-error': 'TXT record not found',
-      },
-    });
-  }
-  if (txtrecords[0].indexOf(hash) === -1) {
-    return new Response(`TXT record for ${txt} does not contain ${hash}`, {
-      status: 403,
-      headers: {
-        'x-error': 'TXT record does not match',
-      },
-    });
-  }
+
   // create new domain key by making API request
   const endpoint = new URL('https://helix-pages.anywhere.run/helix-services/run-query@v3/rotate-domainkeys');
   const body = {
@@ -116,10 +204,7 @@ curl -X POST -d "domain=${domain}&domainkey=${newkey}" ${currentURL}
       status: 503,
     });
   }
-  const confirmedkey = json.results.data[0].key;
-  return new Response(`TXT record for ${txt} contains ${hash}, you can now use the domainkey ${confirmedkey}`, {
-    status: 201,
-  });
+  return response;
 }
 
 export const main = wrap(run)
