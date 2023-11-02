@@ -1,3 +1,18 @@
+# [1.1.0](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.4...v1.1.0) (2023-11-02)
+
+
+### Bug Fixes
+
+* **http:** handle http timeouts properly ([0366aba](https://github.com/adobe/franklin-domainkey-provider/commit/0366abae482d6676ec483c3b6943e521382fd779))
+* **http:** use correct fetch api ([d68e368](https://github.com/adobe/franklin-domainkey-provider/commit/d68e36830846bce4eea540aeefe976ecefb145a4))
+
+
+### Features
+
+* **http:** add instructions for HTTP challenge in initial response ([9fe17eb](https://github.com/adobe/franklin-domainkey-provider/commit/9fe17ebb8a57cb54c9fc1f4ec1b465080208f324))
+* **index:** implement http challenge ([85a9d41](https://github.com/adobe/franklin-domainkey-provider/commit/85a9d41aa1465edc01ac32c59f2bb9548be38a53))
+* **index:** support both HTTP and DNS validation ([5b25c4e](https://github.com/adobe/franklin-domainkey-provider/commit/5b25c4e85597855704ebb893a69b1f3d67eeb572))
+
 ## [1.0.4](https://github.com/adobe/franklin-domainkey-provider/compare/v1.0.3...v1.0.4) (2023-10-30)
 
 
